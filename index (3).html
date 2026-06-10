@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Structured Testing Fleet</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0d1117; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; padding: 24px; }
+    .dash { max-width: 1400px; margin: 0 auto; }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .header-left h1 { font-size: 20px; font-weight: 500; color: #e6edf3; }
+    .header-left p { font-size: 12px; color: #7d8590; margin-top: 2px; }
+    .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .live-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #3fb950; background: rgba(63,185,80,0.1); padding: 4px 12px; border-radius: 20px; border: 0.5px solid rgba(63,185,80,0.3); }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #3fb950; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+    .admin-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #d29922; background: rgba(210,153,34,0.1); padding: 4px 12px; border-radius: 20px; border: 0.5px solid rgba(210,153,34,0.3); }
+    .admin-status.unlocked { color: #3fb950; background: rgba(63,185,80,0.1); border-color: rgba(63,185,80,0.3); }
+    .save-indicator { font-size: 11px; color: #3fb950; opacity: 0; transition: opacity 0.3s; }
+    .save-indicator.show { opacity: 1; }
+
+    .metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
+    @media(max-width:600px){ .metrics { grid-template-columns: repeat(2,1fr); } }
+    .mc { background: #161b22; border: 0.5px solid #30363d; border-radius: 8px; padding: 12px 14px; }
+    .mc-label { font-size: 10px; color: #7d8590; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .mc-value { font-size: 24px; font-weight: 500; }
+    .mc-sub { font-size: 11px; color: #7d8590; margin-top: 3px; }
+    .m-green{color:#3fb950} .m-blue{color:#58a6ff} .m-amber{color:#d29922}
+
+    .controls { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+    .search-wrap { position: relative; flex: 1; min-width: 180px; }
+    .search-wrap i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #7d8590; font-size: 15px; }
+    .search-input { width: 100%; background: #161b22; border: 0.5px solid #30363d; border-radius: 8px; padding: 8px 10px 8px 32px; color: #e6edf3; font-size: 13px; outline: none; }
+    .search-input:focus { border-color: #58a6ff; }
+    .search-input::placeholder { color: #7d8590; }
+    .filter-btn { background: #161b22; border: 0.5px solid #30363d; border-radius: 8px; padding: 6px 12px; color: #e6edf3; font-size: 11px; cursor: pointer; white-space: nowrap; }
+    .filter-btn.active { border-color: #58a6ff; color: #58a6ff; background: rgba(88,166,255,0.08); }
+
+    .table-outer { overflow-x: auto; border: 0.5px solid #30363d; border-radius: 12px; }
+    table { width: 100%; min-width: 1000px; border-collapse: collapse; font-size: 12px; }
+    thead { background: #0d1117; }
+    th { padding: 10px 12px; text-align: left; color: #7d8590; font-weight: 500; font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 0.5px solid #30363d; white-space: nowrap; }
+    td { padding: 9px 12px; border-bottom: 0.5px solid #21262d; color: #e6edf3; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); cursor: pointer; }
+
+    .type-pill { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 500; white-space: nowrap; }
+    .tp-liberty{background:rgba(88,166,255,0.12);color:#58a6ff}
+    .tp-w12{background:rgba(163,113,247,0.12);color:#a371f7}
+    .tp-apollo{background:rgba(63,185,80,0.12);color:#3fb950}
+
+    .avail-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 500; white-space: nowrap; }
+    .av-available{background:rgba(63,185,80,0.12);color:#3fb950;border:0.5px solid rgba(63,185,80,0.3)}
+    .av-inuse{background:rgba(88,166,255,0.12);color:#58a6ff;border:0.5px solid rgba(88,166,255,0.3)}
+    .av-maintenance{background:rgba(248,81,73,0.12);color:#f85149;border:0.5px solid rgba(248,81,73,0.3)}
+    .av-transit{background:rgba(210,153,34,0.12);color:#d29922;border:0.5px solid rgba(210,153,34,0.3)}
+    .dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+    .priority-dot{display:inline-block;width:8px;height:8px;border-radius:50%}
+    .p-high{background:#f85149}.p-med{background:#d29922}.p-low{background:#3fb950}
+    .hw{font-family:monospace;font-size:10px;color:#79c0ff;white-space:nowrap}
+    .fw-val{font-family:monospace;font-size:11px;color:#d2a8ff;white-space:nowrap}
+    .fw-tbd{font-size:11px;color:#3a3f47;font-style:italic}
+    .fw-updated{font-family:monospace;font-size:11px;color:#3fb950;white-space:nowrap}
+    .test-id{font-family:monospace;font-size:11px;color:#e6edf3}
+    .test-none{font-size:11px;color:#3a3f47}
+    .sched-range{font-size:11px;color:#7d8590;white-space:nowrap}
+    .sched-none{font-size:11px;color:#3a3f47}
+
+    .footer{display:flex;justify-content:space-between;align-items:center;margin-top:20px}
+    .admin-btn{display:flex;align-items:center;gap:8px;background:#161b22;border:0.5px solid #30363d;border-radius:8px;padding:8px 16px;color:#7d8590;font-size:12px;cursor:pointer}
+    .admin-btn:hover{border-color:#58a6ff;color:#58a6ff}
+    .admin-btn.active{border-color:#3fb950;color:#3fb950;background:rgba(63,185,80,0.05)}
+
+    .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;align-items:center;justify-content:center}
+    .overlay.open{display:flex}
+    .modal{background:#161b22;border:0.5px solid #30363d;border-radius:12px;padding:24px;width:520px;max-width:95vw;position:relative;max-height:88vh;overflow-y:auto}
+    .modal h2{font-size:15px;font-weight:500;margin-bottom:16px;color:#e6edf3}
+    .modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:#7d8590;cursor:pointer;font-size:18px}
+    .pw-box{background:#161b22;border:0.5px solid #30363d;border-radius:12px;padding:28px;width:340px;max-width:95vw;text-align:center}
+    .pw-box h2{font-size:15px;font-weight:500;margin-bottom:6px;color:#e6edf3}
+    .pw-box p{font-size:12px;color:#7d8590;margin-bottom:20px}
+    .pw-input{width:100%;background:#0d1117;border:0.5px solid #30363d;border-radius:8px;color:#e6edf3;padding:10px 14px;font-size:14px;text-align:center;letter-spacing:4px;outline:none;font-family:monospace}
+    .pw-input:focus{border-color:#58a6ff}
+    .pw-input.error{border-color:#f85149;animation:shake .3s}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+    .pw-error{font-size:11px;color:#f85149;margin-top:8px;min-height:16px}
+    .pw-btn{background:#238636;border:none;color:#fff;padding:9px 28px;border-radius:8px;font-size:13px;cursor:pointer;margin-top:16px;width:100%}
+    .pw-btn:hover{background:#2ea043}
+    .lock-icon{font-size:32px;color:#7d8590;margin-bottom:12px}
+    .readonly-notice{display:flex;align-items:center;gap:8px;background:rgba(88,166,255,0.06);border:0.5px solid rgba(88,166,255,0.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#58a6ff;margin-bottom:16px}
+    .mrow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+    .mfield label{font-size:10px;color:#7d8590;margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:0.4px}
+    .mfield p{font-size:13px;color:#e6edf3}
+    .mdivider{border-top:0.5px solid #30363d;margin:12px 0}
+    .m-select{background:#0d1117;border:0.5px solid #30363d;border-radius:8px;color:#e6edf3;padding:7px 10px;font-size:12px;width:100%;cursor:pointer}
+    .m-select:disabled,.m-input:disabled,.m-input-plain:disabled{opacity:.4;cursor:not-allowed}
+    .m-input{background:#0d1117;border:0.5px solid #30363d;border-radius:8px;color:#e6edf3;padding:7px 10px;font-size:12px;width:100%;font-family:monospace}
+    .m-input-plain{background:#0d1117;border:0.5px solid #30363d;border-radius:8px;color:#e6edf3;padding:7px 10px;font-size:12px;width:100%}
+    .sched-row{display:flex;align-items:center;gap:8px}
+    .sched-row input{background:#0d1117;border:0.5px solid #30363d;border-radius:8px;color:#e6edf3;padding:7px 10px;font-size:12px;width:100%}
+    .sched-row input:disabled{opacity:.4;cursor:not-allowed}
+    .sched-row span{color:#7d8590;font-size:12px;white-space:nowrap}
+    .save-btn{background:#238636;border:none;color:#fff;padding:7px 20px;border-radius:8px;font-size:13px;cursor:pointer;margin-top:14px}
+    .save-btn:hover{background:#2ea043}
+    .save-btn:disabled{opacity:.3;cursor:not-allowed}
+    .changelog{margin-top:4px}
+    .log-item{display:flex;gap:10px;font-size:11px;color:#7d8590;padding:4px 0;border-bottom:0.5px solid #21262d}
+    .log-item:last-child{border-bottom:none}
+    .log-date{color:#58a6ff;white-space:nowrap;min-width:110px}
+    .no-results{text-align:center;padding:40px;color:#7d8590;font-size:13px}
+  </style>
+</head>
+<body>
+<div class="dash">
+  <div class="header">
+    <div class="header-left">
+      <h1><i class="ti ti-car" style="margin-right:8px;color:#58a6ff"></i>Structured Testing Fleet</h1>
+      <p>Castle Proving Ground · CAB Region · Fleet Operations Command</p>
+    </div>
+    <div class="header-right">
+      <span class="save-indicator" id="saveIndicator"><i class="ti ti-check"></i> Saved</span>
+      <div class="admin-status" id="adminStatus"><i class="ti ti-lock"></i>View only</div>
+      <div class="live-badge"><div class="live-dot"></div>Live</div>
+    </div>
+  </div>
+
+  <div class="metrics" id="metrics"></div>
+
+  <div class="controls">
+    <div class="search-wrap">
+      <i class="ti ti-search"></i>
+      <input class="search-input" type="text" id="searchInput" placeholder="Search car #, test ID, pool, firmware, hardware...">
+    </div>
+    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('liberty',this)">Liberty</button>
+    <button class="filter-btn" onclick="setFilter('w12',this)">W12</button>
+    <button class="filter-btn" onclick="setFilter('apollo',this)">Apollo</button>
+    <button class="filter-btn" onclick="setFilter('available',this)">Available</button>
+    <button class="filter-btn" onclick="setFilter('inuse',this)">In Use</button>
+    <button class="filter-btn" onclick="setFilter('high',this)">High Priority</button>
+    <button class="filter-btn" onclick="setFilter('fwtbd',this)">FW Missing</button>
+  </div>
+
+  <div class="table-outer">
+    <table>
+      <thead>
+        <tr>
+          <th>Car #</th><th>Type</th><th>Pool</th><th>Availability</th><th>Priority</th>
+          <th>Assigned Test</th><th>Scheduling</th><th>Firmware</th><th>Hardware Config</th><th>Last Updated</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="no-results" id="noResults" style="display:none">No vehicles match your filter.</div>
+  </div>
+
+  <div class="footer">
+    <span style="font-size:11px;color:#3a3f47">Structured Testing Fleet · Castle Proving Ground</span>
+    <button class="admin-btn" id="adminBtn" onclick="handleAdminBtn()">
+      <i class="ti ti-lock" id="adminBtnIcon"></i>
+      <span id="adminBtnLabel">Admin</span>
+    </button>
+  </div>
+</div>
+
+<!-- Password modal -->
+<div class="overlay" id="pwOverlay">
+  <div class="pw-box">
+    <div class="lock-icon"><i class="ti ti-lock-password"></i></div>
+    <h2>Admin access</h2>
+    <p>Enter the admin password to enable editing</p>
+    <input class="pw-input" type="password" id="pwInput" placeholder="••••••" maxlength="20" onkeydown="if(event.key==='Enter')submitPw()">
+    <div class="pw-error" id="pwError"></div>
+    <button class="pw-btn" onclick="submitPw()">Unlock</button>
+    <button style="background:none;border:none;color:#7d8590;font-size:12px;margin-top:12px;cursor:pointer;width:100%" onclick="document.getElementById('pwOverlay').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<!-- Vehicle detail modal -->
+<div class="overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('modalOverlay').classList.remove('open')"><i class="ti ti-x"></i></button>
+    <h2 id="modalTitle">Vehicle Detail</h2>
+    <div id="modalContent"></div>
+    <button class="save-btn" id="saveBtn" onclick="saveModal()"><i class="ti ti-device-floppy" style="margin-right:6px"></i>Save changes</button>
+  </div>
+</div>
+
+<script>
+const ADMIN_PASSWORD = 'fleet2026';
+const STORAGE_KEY = 'stf-fleet-data-v1';
+let isAdmin = false, activeFilter = 'all', activeVehicle = null;
+
+let vehicles = [
+  {id:'1301',type:'Liberty',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'',schedTo:'',fw:'',hw:'sds_e3_liberty_beta',updatedBy:'R. Franco',updatedAt:'06/09 08:00',log:['06/09 08:00 — R. Franco · Status set to Available']},
+  {id:'1307',type:'Liberty',pool:'Sys Testing',avail:'in-use',priority:'high',test:'ST-LANE-041',schedFrom:'06/09/26',schedTo:'06/10/26',fw:'',hw:'sds_e3_liberty_prod_uk',updatedBy:'R. Franco',updatedAt:'06/09 07:15',log:['06/09 07:15 — R. Franco · Assigned ST-LANE-041']},
+  {id:'1318',type:'Liberty',pool:'Driverless',avail:'available',priority:'med',test:'',schedFrom:'06/12/26',schedTo:'06/14/26',fw:'',hw:'sds_e3_liberty_beta',updatedBy:'R. Franco',updatedAt:'06/08 16:00',log:['06/08 16:00 — R. Franco · Cleared for testing']},
+  {id:'1322',type:'Liberty',pool:'Sys Testing',avail:'maintenance',priority:'high',test:'',schedFrom:'',schedTo:'',fw:'',hw:'sds_e3_liberty_beta',updatedBy:'R. Franco',updatedAt:'06/07 09:30',log:['06/07 09:30 — R. Franco · Maintenance · sensor fault']},
+  {id:'1326',type:'Liberty',pool:'Sys Testing',avail:'available',priority:'low',test:'',schedFrom:'06/13/26',schedTo:'06/15/26',fw:'',hw:'sds_e3_liberty_prod_uk',updatedBy:'R. Franco',updatedAt:'06/06 14:00',log:['06/06 14:00 — R. Franco · Post-run check passed']},
+  {id:'2007',type:'Liberty',pool:'Sys Testing',avail:'in-use',priority:'high',test:'ST-INT-017',schedFrom:'06/09/26',schedTo:'06/09/26',fw:'',hw:'sds_e3_liberty_prod_cic1',updatedBy:'R. Franco',updatedAt:'06/09 06:45',log:['06/09 06:45 — R. Franco · Assigned ST-INT-017']},
+  {id:'2009',type:'Liberty',pool:'Driverless',avail:'available',priority:'med',test:'',schedFrom:'06/11/26',schedTo:'06/12/26',fw:'',hw:'sds_e3_liberty_prod_cic1',updatedBy:'R. Franco',updatedAt:'06/08 15:30',log:['06/08 15:30 — R. Franco · Config verified']},
+  {id:'2027',type:'Liberty',pool:'Sys Testing',avail:'transit',priority:'low',test:'',schedFrom:'',schedTo:'',fw:'',hw:'sds_e3_liberty_mule_pco',updatedBy:'R. Franco',updatedAt:'06/09 09:00',log:['06/09 09:00 — R. Franco · Cross-site transfer initiated']},
+  {id:'2097',type:'Liberty',pool:'Sys Testing',avail:'maintenance',priority:'high',test:'',schedFrom:'',schedTo:'',fw:'',hw:'sds_e3_liberty_prod_cic1',updatedBy:'R. Franco',updatedAt:'06/08 11:00',log:['06/08 11:00 — R. Franco · Maintenance · radar offline']},
+  {id:'2112',type:'Liberty',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'06/10/26',schedTo:'06/11/26',fw:'',hw:'sds_e3_liberty_prod',updatedBy:'R. Franco',updatedAt:'06/09 07:00',log:['06/09 07:00 — R. Franco · Ready']},
+  {id:'2136',type:'Liberty',pool:'Sys Testing',avail:'in-use',priority:'high',test:'ST-PERF-031',schedFrom:'06/09/26',schedTo:'06/10/26',fw:'',hw:'sds_e3_liberty_prod_cic1',updatedBy:'R. Franco',updatedAt:'06/09 08:30',log:['06/09 08:30 — R. Franco · Assigned ST-PERF-031']},
+  {id:'2151',type:'Liberty',pool:'Sys Testing',avail:'available',priority:'low',test:'',schedFrom:'06/14/26',schedTo:'06/16/26',fw:'',hw:'sds_e3_liberty_prod_japan',updatedBy:'R. Franco',updatedAt:'06/07 10:00',log:['06/07 10:00 — R. Franco · Post-wash clear']},
+  {id:'2170',type:'Liberty',pool:'Sys Testing',avail:'maintenance',priority:'high',test:'',schedFrom:'',schedTo:'',fw:'',hw:'sds_e3_liberty_prod_cic1',updatedBy:'R. Franco',updatedAt:'06/06 13:00',log:['06/06 13:00 — R. Franco · Retrofit pending']},
+  {id:'11002',type:'Liberty',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'06/11/26',schedTo:'06/12/26',fw:'',hw:'sds_e3_liberty_prod_uk',updatedBy:'R. Franco',updatedAt:'06/09 06:00',log:['06/09 06:00 — R. Franco · Standby config loaded']},
+  {id:'11004',type:'Liberty',pool:'Sys Testing',avail:'in-use',priority:'high',test:'ST-NAV-055',schedFrom:'06/09/26',schedTo:'06/09/26',fw:'',hw:'sds_e3_liberty_my2024_beta',updatedBy:'R. Franco',updatedAt:'06/09 07:45',log:['06/09 07:45 — R. Franco · Assigned ST-NAV-055']},
+  {id:'11122',type:'Liberty',pool:'Sys Testing',avail:'available',priority:'low',test:'',schedFrom:'06/12/26',schedTo:'06/13/26',fw:'',hw:'sds_e3_liberty_prod_uk',updatedBy:'R. Franco',updatedAt:'06/08 14:00',log:['06/08 14:00 — R. Franco · Config audit passed']},
+  {id:'11134',type:'Liberty',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'06/10/26',schedTo:'06/11/26',fw:'',hw:'sds_e3_liberty_my2024_prod_cic1',updatedBy:'R. Franco',updatedAt:'06/09 05:50',log:['06/09 05:50 — R. Franco · Pre-run check complete']},
+  {id:'15026',type:'W12',pool:'Driverless',avail:'available',priority:'med',test:'',schedFrom:'06/11/26',schedTo:'06/12/26',fw:'',hw:'sds_f_w12_alpha_plus',updatedBy:'R. Franco',updatedAt:'06/08 17:00',log:['06/08 17:00 — R. Franco · Config set']},
+  {id:'15053',type:'W12',pool:'Sys Testing',avail:'in-use',priority:'high',test:'ST-MAP-018',schedFrom:'06/09/26',schedTo:'06/10/26',fw:'FW 3.3.4.1',hw:'sds_f_w12_beta2',updatedBy:'R. Franco',updatedAt:'06/09 08:00',log:['06/09 08:00 — R. Franco · Assigned ST-MAP-018']},
+  {id:'15057',type:'W12',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'06/12/26',schedTo:'06/13/26',fw:'FW 3.6.6',hw:'sds_r2a_w12_alpha_bfc5_ph_ph',updatedBy:'R. Franco',updatedAt:'06/09 06:30',log:['06/09 06:30 — R. Franco · FW verified']},
+  {id:'15072',type:'W12',pool:'Bring-up',avail:'maintenance',priority:'high',test:'',schedFrom:'',schedTo:'',fw:'FW 4.1.1.8',hw:'sds_f_w12_beta2',updatedBy:'R. Franco',updatedAt:'06/07 12:00',log:['06/07 12:00 — R. Franco · Bring-up in progress']},
+  {id:'15101',type:'W12',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'06/10/26',schedTo:'06/11/26',fw:'FW 3.3.6',hw:'sds_r2a_w12_alpha_bfc5_ph_ph',updatedBy:'R. Franco',updatedAt:'06/08 09:00',log:['06/08 09:00 — R. Franco · Ready']},
+  {id:'15102',type:'W12',pool:'Sys Testing',avail:'in-use',priority:'high',test:'ST-INT-018',schedFrom:'06/09/26',schedTo:'06/10/26',fw:'FW 3.3.6',hw:'sds_r2a_w12_alpha_bfc5_ph_ph',updatedBy:'R. Franco',updatedAt:'06/09 07:30',log:['06/09 07:30 — R. Franco · Assigned ST-INT-018']},
+  {id:'15105',type:'W12',pool:'Sys Testing',avail:'available',priority:'low',test:'',schedFrom:'06/13/26',schedTo:'06/14/26',fw:'FW 4.1.1.2',hw:'sds_r2a_w12_alpha_bfc5_ph_ph',updatedBy:'R. Franco',updatedAt:'06/07 15:00',log:['06/07 15:00 — R. Franco · Post-run clear']},
+  {id:'15186',type:'W12',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'06/11/26',schedTo:'06/12/26',fw:'FW 4.1.1.3',hw:'sds_f_w12_beta2',updatedBy:'R. Franco',updatedAt:'06/09 06:00',log:['06/09 06:00 — R. Franco · FW updated to 4.1.1.3']},
+  {id:'15202',type:'W12',pool:'Sys Testing',avail:'in-use',priority:'high',test:'ST-NIGHT-002',schedFrom:'06/09/26',schedTo:'06/10/26',fw:'FW 4.1.1.8',hw:'sds_f_w12_pp',updatedBy:'R. Franco',updatedAt:'06/09 08:15',log:['06/09 08:15 — R. Franco · Assigned ST-NIGHT-002']},
+  {id:'15203',type:'W12',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'06/11/26',schedTo:'06/12/26',fw:'FW 4.1.1.8',hw:'sds_f_w12_pp',updatedBy:'R. Franco',updatedAt:'06/08 16:30',log:['06/08 16:30 — R. Franco · Cleared']},
+  {id:'15208',type:'W12',pool:'Sys Testing',avail:'available',priority:'low',test:'',schedFrom:'06/12/26',schedTo:'06/13/26',fw:'FW 4.1.1.8',hw:'sds_f_w12_pp',updatedBy:'R. Franco',updatedAt:'06/08 10:00',log:['06/08 10:00 — R. Franco · Charging complete']},
+  {id:'15210',type:'W12',pool:'Durability',avail:'in-use',priority:'med',test:'ST-DUR-004',schedFrom:'06/09/26',schedTo:'06/15/26',fw:'FW 3.3.4.1',hw:'sds_f2b_w12_alpha',updatedBy:'R. Franco',updatedAt:'06/09 06:00',log:['06/09 06:00 — R. Franco · Durability run active']},
+  {id:'15211',type:'W12',pool:'Sys Testing',avail:'available',priority:'low',test:'',schedFrom:'06/10/26',schedTo:'06/11/26',fw:'',hw:'sds_f2b_w12_alpha',updatedBy:'R. Franco',updatedAt:'06/08 14:30',log:['06/08 14:30 — R. Franco · Ready']},
+  {id:'15212',type:'W12',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'06/11/26',schedTo:'06/12/26',fw:'',hw:'sds_f2b_w12_alpha',updatedBy:'R. Franco',updatedAt:'06/08 15:00',log:['06/08 15:00 — R. Franco · Config confirmed']},
+  {id:'15215',type:'W12',pool:'Canary',avail:'in-use',priority:'high',test:'ST-CANARY-01',schedFrom:'06/09/26',schedTo:'06/10/26',fw:'FW 4.1.1.8',hw:'sds_f_w12_pp',updatedBy:'R. Franco',updatedAt:'06/09 07:00',log:['06/09 07:00 — R. Franco · Canary run active']},
+  {id:'15250',type:'W12',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'06/12/26',schedTo:'06/13/26',fw:'FW 4.1.1.3',hw:'sds_f_w12_pp',updatedBy:'R. Franco',updatedAt:'06/09 06:15',log:['06/09 06:15 — R. Franco · Standby']},
+  {id:'15251',type:'W12',pool:'Operations',avail:'in-use',priority:'high',test:'ST-OPS-007',schedFrom:'06/09/26',schedTo:'06/09/26',fw:'FW 4.1.1.8',hw:'sds_f_w12_pp',updatedBy:'R. Franco',updatedAt:'06/09 08:45',log:['06/09 08:45 — R. Franco · Assigned ST-OPS-007']},
+  {id:'15261',type:'W12',pool:'Driverless',avail:'available',priority:'med',test:'',schedFrom:'06/13/26',schedTo:'06/14/26',fw:'FW 4.1.1.8',hw:'sds_f_w12_pp',updatedBy:'R. Franco',updatedAt:'06/08 17:30',log:['06/08 17:30 — R. Franco · Cleared']},
+  {id:'15296',type:'W12',pool:'Sys Testing',avail:'maintenance',priority:'high',test:'',schedFrom:'',schedTo:'',fw:'',hw:'sds_f2a_w12_beta',updatedBy:'R. Franco',updatedAt:'06/07 11:00',log:['06/07 11:00 — R. Franco · HW retrofit in progress']},
+  {id:'15303',type:'W12',pool:'Sys Testing',avail:'available',priority:'low',test:'',schedFrom:'06/14/26',schedTo:'06/15/26',fw:'',hw:'sds_f2a_w12_beta',updatedBy:'R. Franco',updatedAt:'06/08 13:00',log:['06/08 13:00 — R. Franco · Ready']},
+  {id:'15305',type:'W12',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'06/11/26',schedTo:'06/12/26',fw:'FW 4.1.1.5',hw:'sds_f2a_w12_beta',updatedBy:'R. Franco',updatedAt:'06/09 05:45',log:['06/09 05:45 — R. Franco · Pre-run verified']},
+  {id:'15701',type:'W12',pool:'Sys Testing',avail:'in-use',priority:'high',test:'ST-MAP-019',schedFrom:'06/09/26',schedTo:'06/10/26',fw:'FW 4.1.1.3',hw:'sds_f_w12_prod',updatedBy:'R. Franco',updatedAt:'06/09 08:30',log:['06/09 08:30 — R. Franco · Active mapping run']},
+  {id:'15702',type:'W12',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'06/10/26',schedTo:'06/11/26',fw:'FW 4.1.1.3',hw:'sds_f_w12_prod',updatedBy:'R. Franco',updatedAt:'06/09 06:00',log:['06/09 06:00 — R. Franco · Cleared']},
+  {id:'15703',type:'W12',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'06/11/26',schedTo:'06/12/26',fw:'FW 4.3.0.0',hw:'sds_f_w12_prod',updatedBy:'R. Franco',updatedAt:'06/09 07:00',log:['06/09 07:00 — R. Franco · FW updated to 4.3.0.0']},
+  {id:'15712',type:'W12',pool:'Sys Testing',avail:'in-use',priority:'high',test:'CC-CRUISE-01',schedFrom:'06/09/26',schedTo:'06/10/26',fw:'FW 4.1.1.9',hw:'sds_f_w12_prod',updatedBy:'R. Franco',updatedAt:'06/09 08:00',log:['06/09 08:00 — R. Franco · CC Cruise assigned']},
+  {id:'15713',type:'W12',pool:'Sys Testing',avail:'available',priority:'low',test:'',schedFrom:'06/12/26',schedTo:'06/13/26',fw:'FW 4.1.1.9',hw:'sds_f_w12_prod',updatedBy:'R. Franco',updatedAt:'06/08 16:00',log:['06/08 16:00 — R. Franco · Ready']},
+  {id:'15714',type:'W12',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'06/10/26',schedTo:'06/11/26',fw:'FW 4.1.1.8',hw:'sds_f_w12_prod',updatedBy:'R. Franco',updatedAt:'06/09 09:00',log:['06/09 09:00 — R. Franco · Post-flash check complete']},
+  {id:'15880',type:'W12',pool:'Driverless',avail:'in-use',priority:'high',test:'ST-DL-011',schedFrom:'06/09/26',schedTo:'06/10/26',fw:'FW 4.1.1.8',hw:'sds_f2a_apollo_fw3_alpha_bfc5_ph_ph',updatedBy:'R. Franco',updatedAt:'06/09 07:45',log:['06/09 07:45 — R. Franco · Driverless run active']},
+  {id:'20014',type:'Apollo',pool:'Sys Testing',avail:'in-use',priority:'high',test:'AP-DAILY-01',schedFrom:'06/09/26',schedTo:'06/09/26',fw:'FW 3a.2',hw:'sds_f2a_apollo_fw3_alpha_bfc5_ph_ph',updatedBy:'R. Franco',updatedAt:'06/09 06:30',log:['06/09 06:30 — R. Franco · Apollo Daily Startup active']},
+  {id:'20015',type:'Apollo',pool:'Sys Testing',avail:'available',priority:'med',test:'',schedFrom:'06/10/26',schedTo:'06/11/26',fw:'FW 3a.2',hw:'sds_f2a_apollo_fw3_alpha_bfc5_ph_ph',updatedBy:'R. Franco',updatedAt:'06/08 17:00',log:['06/08 17:00 — R. Franco · Ready']},
+  {id:'20023',type:'Apollo',pool:'Sys Testing',avail:'available',priority:'low',test:'',schedFrom:'06/13/26',schedTo:'06/14/26',fw:'',hw:'sds_f2a_apollo_fw3_alpha_bfc5_ph_ph',updatedBy:'R. Franco',updatedAt:'06/08 12:00',log:['06/08 12:00 — R. Franco · Config verified']},
+];
+
+function loadData(){
+  try{const s=localStorage.getItem(STORAGE_KEY);if(s)vehicles=JSON.parse(s);}catch(e){}
+  renderMetrics();renderTable(getFiltered());
+}
+function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(vehicles));
+    const ind=document.getElementById('saveIndicator');
+    ind.classList.add('show');setTimeout(()=>ind.classList.remove('show'),2000);
+  }catch(e){}
+}
+function typePill(t){const c={Liberty:'tp-liberty',W12:'tp-w12',Apollo:'tp-apollo'};return `<span class="type-pill ${c[t]}">${t}</span>`;}
+function availBadge(a){const map={'available':['av-available','Available'],'in-use':['av-inuse','In Use'],'maintenance':['av-maintenance','Maintenance'],'transit':['av-transit','In Transit']};const[cls,label]=map[a]||['av-maintenance',a];return `<span class="avail-badge ${cls}"><span class="dot"></span>${label}</span>`;}
+function fwCell(v){if(!v.fw)return '<span class="fw-tbd">TBD</span>';if(v.updated)return `<span class="fw-updated">${v.fw} ↑</span>`;return `<span class="fw-val">${v.fw}</span>`;}
+function schedCell(v){if(!v.schedFrom&&!v.schedTo)return '<span class="sched-none">—</span>';return `<span class="sched-range">${v.schedFrom} – ${v.schedTo}</span>`;}
+function priorityCell(p){const cls={high:'p-high',med:'p-med',low:'p-low'};return `<span class="priority-dot ${cls[p]}" title="${p} priority"></span>`;}
+function renderMetrics(){const avail=vehicles.filter(v=>v.avail==='available').length;const inuse=vehicles.filter(v=>v.avail==='in-use').length;const down=vehicles.filter(v=>v.avail==='maintenance'||v.avail==='transit').length;document.getElementById('metrics').innerHTML=`<div class="mc"><div class="mc-label">Fleet size</div><div class="mc-value m-blue">${vehicles.length}</div><div class="mc-sub">primary test vehicles</div></div><div class="mc"><div class="mc-label">Available</div><div class="mc-value m-green">${avail}</div><div class="mc-sub">ready to deploy</div></div><div class="mc"><div class="mc-label">In use</div><div class="mc-value m-blue">${inuse}</div><div class="mc-sub">active test runs</div></div><div class="mc"><div class="mc-label">Down / transit</div><div class="mc-value m-amber">${down}</div><div class="mc-sub">unavailable today</div></div>`;}
+function getFiltered(){const q=document.getElementById('searchInput').value.toLowerCase();return vehicles.filter(v=>{let pass=true;if(activeFilter==='liberty')pass=v.type==='Liberty';else if(activeFilter==='w12')pass=v.type==='W12';else if(activeFilter==='apollo')pass=v.type==='Apollo';else if(activeFilter==='available')pass=v.avail==='available';else if(activeFilter==='inuse')pass=v.avail==='in-use';else if(activeFilter==='high')pass=v.priority==='high';else if(activeFilter==='fwtbd')pass=!v.fw;if(!pass)return false;if(!q)return true;return v.id.includes(q)||v.type.toLowerCase().includes(q)||v.pool.toLowerCase().includes(q)||v.hw.toLowerCase().includes(q)||v.fw.toLowerCase().includes(q)||(v.test||'').toLowerCase().includes(q);});}
+function renderTable(data){const tbody=document.getElementById('tableBody');document.getElementById('noResults').style.display=data.length?'none':'block';if(!data.length){tbody.innerHTML='';return;}tbody.innerHTML=data.map(v=>`<tr onclick="openModal('${v.id}')"><td style="font-weight:500;color:#58a6ff">${v.id}</td><td>${typePill(v.type)}</td><td style="color:#7d8590;font-size:11px">${v.pool}</td><td>${availBadge(v.avail)}</td><td style="text-align:center">${priorityCell(v.priority)}</td><td>${v.test?`<span class="test-id">${v.test}</span>`:'<span class="test-none">—</span>'}</td><td>${schedCell(v)}</td><td>${fwCell(v)}</td><td><span class="hw">${v.hw}</span></td><td style="font-size:10px;color:#7d8590;white-space:nowrap">${v.updatedBy}<br>${v.updatedAt}</td></tr>`).join('');}
+function setFilter(f,el){activeFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderTable(getFiltered());}
+document.getElementById('searchInput').addEventListener('input',()=>renderTable(getFiltered()));
+function handleAdminBtn(){if(isAdmin){isAdmin=false;updateAdminUI();}else{document.getElementById('pwOverlay').classList.add('open');document.getElementById('pwInput').value='';document.getElementById('pwError').textContent='';setTimeout(()=>document.getElementById('pwInput').focus(),100);}}
+function submitPw(){const val=document.getElementById('pwInput').value;if(val===ADMIN_PASSWORD){isAdmin=true;document.getElementById('pwOverlay').classList.remove('open');updateAdminUI();}else{const inp=document.getElementById('pwInput');inp.classList.add('error');document.getElementById('pwError').textContent='Incorrect password. Try again.';inp.value='';setTimeout(()=>inp.classList.remove('error'),400);setTimeout(()=>inp.focus(),100);}}
+function updateAdminUI(){const status=document.getElementById('adminStatus');const btn=document.getElementById('adminBtn');const icon=document.getElementById('adminBtnIcon');const label=document.getElementById('adminBtnLabel');if(isAdmin){status.className='admin-status unlocked';status.innerHTML='<i class="ti ti-lock-open"></i>Admin mode';btn.classList.add('active');icon.className='ti ti-lock-open';label.textContent='Lock admin';}else{status.className='admin-status';status.innerHTML='<i class="ti ti-lock"></i>View only';btn.classList.remove('active');icon.className='ti ti-lock';label.textContent='Admin';}}
+function openModal(id){activeVehicle=vehicles.find(v=>v.id===id);const v=activeVehicle;const dis=isAdmin?'':'disabled';document.getElementById('modalTitle').textContent=`Car ${v.id} — ${v.type}`;document.getElementById('modalContent').innerHTML=`${!isAdmin?`<div class="readonly-notice"><i class="ti ti-info-circle"></i>View only — click Admin at the bottom to enable editing</div>`:''}<div class="mrow"><div class="mfield"><label>Type</label><p>${typePill(v.type)}</p></div><div class="mfield"><label>Pool</label><p>${v.pool}</p></div><div class="mfield"><label>Hardware config</label><p class="hw" style="font-size:11px;margin-top:2px">${v.hw}</p></div><div class="mfield"><label>Firmware</label><input class="m-input" id="fwInput" type="text" placeholder="e.g. FW 4.1.1.8" value="${v.fw}" ${dis}></div></div><div class="mdivider"></div><div class="mrow"><div class="mfield"><label>Availability</label><select class="m-select" id="availSelect" ${dis}><option value="available" ${v.avail==='available'?'selected':''}>Available</option><option value="in-use" ${v.avail==='in-use'?'selected':''}>In Use</option><option value="maintenance" ${v.avail==='maintenance'?'selected':''}>Maintenance</option><option value="transit" ${v.avail==='transit'?'selected':''}>In Transit</option></select></div><div class="mfield"><label>Priority</label><select class="m-select" id="prioritySelect" ${dis}><option value="high" ${v.priority==='high'?'selected':''}>High</option><option value="med" ${v.priority==='med'?'selected':''}>Medium</option><option value="low" ${v.priority==='low'?'selected':''}>Low</option></select></div><div class="mfield" style="grid-column:1/-1"><label>Assigned test</label><input class="m-input-plain" id="testInput" type="text" placeholder="e.g. ST-LANE-041" value="${v.test}" ${dis}></div></div><div class="mfield" style="margin-bottom:12px"><label>Scheduling (MM/DD/YY – MM/DD/YY)</label><div class="sched-row"><input id="schedFrom" type="text" placeholder="MM/DD/YY" value="${v.schedFrom}" maxlength="8" ${dis}><span>–</span><input id="schedTo" type="text" placeholder="MM/DD/YY" value="${v.schedTo}" maxlength="8" ${dis}></div></div><div class="mdivider"></div><div class="mfield" style="margin-bottom:12px"><label>Updated by</label><input class="m-input-plain" id="updatedByInput" type="text" placeholder="Your name" value="${v.updatedBy}" ${dis}></div><div class="mdivider"></div><div class="mfield"><label>Change log</label><div class="changelog">${v.log.map(l=>`<div class="log-item"><span class="log-date">${l.split('—')[0].trim()}</span><span>${l.split('—').slice(1).join('—').trim()}</span></div>`).join('')}</div></div>`;document.getElementById('saveBtn').disabled=!isAdmin;document.getElementById('modalOverlay').classList.add('open');}
+function saveModal(){if(!activeVehicle||!isAdmin)return;const v=activeVehicle;const by=document.getElementById('updatedByInput').value||'Fleet Manager';const ts=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit'})+' '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});v.avail=document.getElementById('availSelect').value;v.priority=document.getElementById('prioritySelect').value;v.fw=document.getElementById('fwInput').value;v.test=document.getElementById('testInput').value;v.schedFrom=document.getElementById('schedFrom').value;v.schedTo=document.getElementById('schedTo').value;v.updatedBy=by;v.updatedAt=ts;v.log.unshift(`${ts} — ${by} · ${v.avail}${v.test?' · '+v.test:''}${v.schedFrom?' · '+v.schedFrom+' – '+v.schedTo:''}`);document.getElementById('modalOverlay').classList.remove('open');saveData();renderMetrics();renderTable(getFiltered());}
+function closeModal(e){if(e.target===document.getElementById('modalOverlay'))document.getElementById('modalOverlay').classList.remove('open');}
+loadData();
+</script>
+</body>
+</html>
